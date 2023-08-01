@@ -23,13 +23,12 @@
 #define CIRRENT_APP_ONBOARDING (0)
 
 /*define AWS_FLOW macro as 1 for choosing AWS flow and 0 for Cirrent flow*/
-#define AWS_FLOW (0)
-
-/*Max response delay in milliseconds for AT+CONNECT command*/
-#define MAX_CONNECT_DELAY (120000)
+#define AWS_FLOW (1)
 
 /* Max response delay in milliseconds for AT commands*/
-#define RESPONSE_DELAY (5000)
+#define RESPONSE_DELAY (120000)
+
+#define POLLING_DELAY (60000)
 
 #define SUCCESS 1
 
@@ -57,7 +56,7 @@ int result = 0;
 
 /*******************************************************************************
  * Function Name: main
- ********************************************************************************
+ *******************************************************************************
  * Summary:
  *  System entrance point. This function
  *  - performs initial setup of device
@@ -90,12 +89,6 @@ int main()
     if (!is_aws_connected())
     {
 
-        /*AT command for getting device name*/
-        at_command_send_receive("AT+CONF? ThingName\n", RESPONSE_DELAY, &result, NULL);
-
-        /*AT command for getting device certificate*/
-        at_command_send_receive("AT+CONF? Certificate pem\n", RESPONSE_DELAY, &result, NULL);
-
         /*AT command for sending Device Endpoint*/
         at_command_send_receive(SET_ENDPOINT, RESPONSE_DELAY, &result, NULL);
 
@@ -106,7 +99,7 @@ int main()
         }
 
         /*AT command for Connecting to AWS Cloud*/
-        at_command_send_receive("AT+CONNECT\n", MAX_CONNECT_DELAY, &result, "OK 1 CONNECTED\r\n");
+        at_command_send_receive("AT+CONNECT\n", RESPONSE_DELAY, &result, "OK 1 CONNECTED\r\n");
 
         if (result != SUCCESS)
         {
@@ -127,7 +120,7 @@ int main()
         }
 
         /*AT command for Connecting CCM device to AWS staging*/
-        at_command_send_receive("AT+CONNECT\n", MAX_CONNECT_DELAY, &result, "OK 1 CONNECTED\r\n");
+        at_command_send_receive("AT+CONNECT\n", RESPONSE_DELAY, &result, "OK 1 CONNECTED\r\n");
 
         if (result != SUCCESS)
         {
@@ -140,9 +133,10 @@ int main()
         /* Check in Cirrent console if the Job executed succesfully */
         printf("\nThe Connection Automatically switches to the new endpoint after 120 seconds\n\n");
 
-        delay_ms(MAX_CONNECT_DELAY);
+        delay_ms(RESPONSE_DELAY);
 
-        while (!is_aws_connected());
+        while (!is_aws_connected())
+            ;
     }
 
 #endif
@@ -178,7 +172,10 @@ static void wifionboarding()
 
     printf("\n\rOpen Cirrent APP on your mobile device and choose your Wi-Fi SSID. \n\rThe program continues after successfully connecting to Wi-Fi SSID.\n\r");
 
-    while (!is_wifi_connected());
+    while (!is_wifi_connected())
+    {
+        delay_ms(POLLING_DELAY);
+    }
 
 #else
 
